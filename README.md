@@ -8,7 +8,7 @@ This backend API serves as the backbone for the Notes App. It provides various u
 
 1. Clone the repository:
 
-   git clone projecturl
+   git clone https://github.com/nakul30/noteapp.git
 
 2. Install project dependencies and start the development environment:
 
