@@ -15,8 +15,6 @@ module.exports.create = async function (req, res) {
     if (req.body.password !== req.body.confirm_password) {
       return res.status(400).json({ message: "Passwords do not match" });
     }
-
-    // Check for existing user
     const existingUser = await User.findOne({ email: req.body.email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -29,7 +27,6 @@ module.exports.create = async function (req, res) {
       password: req.body.password, // TODO ---->Consider hashing the password before saving
     });
 
-    // Send success response
     res.status(201).json({ message: "User created successfully" });
   } catch (err) {
     console.error("Error:", err);
@@ -50,12 +47,13 @@ module.exports.createsession = async function (req, res) {
   }
 };
 module.exports.destroySession = function (req, res) {
+  console.log("Error after Entring destroy session code ")
   req.logout(function (err) {
     try {
       if (err) {
         console.error('Error destroying session:', err);
         res.status(500).json({ error: 'Failed to destroy session' });
-        res.end();
+        res.end(); 
       }
  
       res.json({ message: 'Session destroyed successfully' });
