@@ -56,11 +56,38 @@ module.exports.createnote = async function (req, res) {
     }
   };
  
+  // module.exports.onenoteload = async function (req, res) {
+  //   try {
+  //     // Authentication check
+  //     if (!req.isAuthenticated()) {
+  //       return res.status(401).json({ error: 'Unauthorized' }); 
+  //     }
+  
+  //     // Extract note ID and authenticated user ID
+  //     const noteId = req.params.id;
+  //     const authenticatedUserId = req.user._id; // Assuming user ID is in req.user
+  
+  //     // Retrieve the note
+  //     const note = await Note.findById(noteId)
+  //       .populate('nuser') // Populate user information
+  //       .lean(); // Optimize performance
+  
+  //     // Check if note exists and belongs to the authenticated user
+  //     if (!note || note.nuser._id.toString() !== authenticatedUserId.toString()) {
+  //       return res.status(403).json({ error: 'Forbidden' }); // 403 for unauthorized access
+  //     }
+  
+  //     res.json(note);
+  //   } catch (error) {
+  //     console.error('Error in onenoteload:', error);
+  //     res.status(500).json({ error: 'Internal server error' });
+  //   }
+  // };
   module.exports.onenoteload = async function (req, res) {
     try {
       // Authentication check
       if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: 'Unauthorized' }); 
+        return res.status(401).json({ error: 'Unauthorized' });
       }
   
       // Extract note ID and authenticated user ID
@@ -72,9 +99,10 @@ module.exports.createnote = async function (req, res) {
         .populate('nuser') // Populate user information
         .lean(); // Optimize performance
   
-      // Check if note exists and belongs to the authenticated user
-      if (!note || note.nuser._id.toString() !== authenticatedUserId.toString()) {
-        return res.status(403).json({ error: 'Forbidden' }); // 403 for unauthorized access
+      // Check if note exists and is either owned or shared with the authenticated user
+      if (!note ||
+        !note.shareduser.includes(authenticatedUserId) && note.nuser._id.toString() !== authenticatedUserId.toString()) {
+        return res.status(403).json({ error: 'Forbidden' });
       }
   
       res.json(note);
@@ -165,26 +193,17 @@ module.exports.createnote = async function (req, res) {
   
       // Retrieve the original note
       const originalNote = await Note.findById(noteId);
-      console.log(recipientUserId) ; 
-      console.log(originalNote) ;
   
       // Check if note exists
       if (!originalNote) {
         return res.status(404).json({ error: 'Note not found' });
       }
   
-      // Create a new note object for the shared user
-      const newNote = {
-        nheading: originalNote.nheading,
-        ncontent: originalNote.ncontent,
-        nuser: recipientUserId // Assign the recipient user as the owner
-      };
+      // Add the recipient user's ID to the shareduser array
+      await Note.findByIdAndUpdate(noteId, { $push: { shareduser: recipientUserId } });
   
-      // Create the new note in the database
-      const sharedNote = await new Note(newNote).save();
-  
-      // Add the shared note ID to the recipient user's notes array
-      await User.findByIdAndUpdate(recipientUserId, { $push: { notes: sharedNote._id } });
+      // Optionally, add the note ID to the recipient user's notes array (if still needed)
+      await User.findByIdAndUpdate(recipientUserId, { $push: { notes: noteId } });
   
       res.json({ message: 'Note shared successfully' });
     } catch (error) {

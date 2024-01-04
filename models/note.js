@@ -12,7 +12,13 @@ const notesschema = new mongoose.Schema({
         type:  mongoose.Schema.Types.ObjectId ,
         ref : 'User' ,
         required:true 
-    }
+    },
+    shareduser: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
 }, {timestamps: true 
 });
 
