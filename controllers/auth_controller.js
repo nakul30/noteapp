@@ -55,8 +55,9 @@ module.exports.destroySession = function (req, res) {
       if (err) {
         console.error('Error destroying session:', err);
         res.status(500).json({ error: 'Failed to destroy session' });
+        res.end();
       }
-
+ 
       res.json({ message: 'Session destroyed successfully' });
     } catch (error) {
       console.error('Error in destroySession:', error);

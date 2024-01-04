@@ -93,15 +93,14 @@ module.exports.createnote = async function (req, res) {
       // Extract note ID and authenticated user ID
       const noteId = req.params.id;
       const authenticatedUserId = req.user._id; // Assuming user ID is in req.user
-  
+
       // Retrieve the note
       const note = await Note.findById(noteId)
         .populate('nuser') // Populate user information
         .lean(); // Optimize performance
   
-      // Check if note exists and is either owned or shared with the authenticated user
-      if (!note ||
-        !note.shareduser.includes(authenticatedUserId) && note.nuser._id.toString() !== authenticatedUserId.toString()) {
+      console.log(authenticatedUserId.toString());
+      if (!note || (!note.shareduser.map(obj => obj.toString()).includes(authenticatedUserId.toString()) && note.nuser._id.toString() !== authenticatedUserId.toString())) {
         return res.status(403).json({ error: 'Forbidden' });
       }
   
