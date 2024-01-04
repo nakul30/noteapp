@@ -125,32 +125,6 @@ module.exports.createnote = async function (req, res) {
       res.status(500).json({ error: 'Internal server error' });
     }
   };
-  // module.exports.deletenode = async function (req, res) {
-  //   try {
-  //     // Authentication check
-  //     if (!req.isAuthenticated()) {
-  //       return res.status(401).json({ error: 'Unauthorized' });
-  //     }
-  
-  //     // Extract note ID from request parameters
-  //     const noteId = req.params.id;
-  
-  //     // Retrieve the note to delete
-  //     const note = await Note.findById(noteId);
-  
-  //     // Check if note exists
-  //     if (!note) {
-  //       return res.status(404).json({ error: 'Note not found' });
-  //     }
-  //     // Delete the note
-  //     await note.deleteOne();
-  
-  //     res.json({ message: 'Note deleted successfully' });
-  //   } catch (error) {
-  //     console.error('Error in deletenode:', error);
-  //     res.status(500).json({ error: 'Internal server error' });
-  //   }
-  // };
   module.exports.deletenode = async function (req, res) {
     try {
       // Authentication check
@@ -185,36 +159,36 @@ module.exports.createnote = async function (req, res) {
   
   module.exports.sharenote = async function (req, res) {
     try {
-      // 1. Extract note ID and shared user ID
+      // Extract note ID and recipient user ID from request parameters
       const noteId = req.params.id;
-      const sharedUserId = req.body.sharedUserId; // Assuming shared user ID is in request body
+      const recipientUserId = req.body.sharedUserId; // Assuming recipient user ID is in request body
   
-      // 2. Validate input
-      if (!sharedUserId) {
-        return res.status(400).json({ error: 'Missing shared user ID' });
+      // Retrieve the original note
+      const originalNote = await Note.findById(noteId);
+      console.log(recipientUserId) ; 
+      console.log(originalNote) ;
+  
+      // Check if note exists
+      if (!originalNote) {
+        return res.status(404).json({ error: 'Note not found' });
       }
   
-      // 3. Retrieve note and shared user
-      const note = await Note.findById(noteId);
-      const sharedUser = await User.findById(sharedUserId);
+      // Create a new note object for the shared user
+      const newNote = {
+        nheading: originalNote.nheading,
+        ncontent: originalNote.ncontent,
+        nuser: recipientUserId // Assign the recipient user as the owner
+      };
   
-      // 4. Validate access and existence
-      if (!note || !sharedUser) {
-        return res.status(404).json({ error: 'Note or user not found' });
-      }
-      console.log(note.nuser._id.toString()) ; 
-      console.log(req.user._id) ;
-      if (note.nuser._id.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ error: 'Unauthorized to share this note' });
-      }
+      // Create the new note in the database
+      const sharedNote = await new Note(newNote).save();
   
-      // 5. Share the note
-      sharedUser.notes.push(note._id);
-      await sharedUser.save();
+      // Add the shared note ID to the recipient user's notes array
+      await User.findByIdAndUpdate(recipientUserId, { $push: { notes: sharedNote._id } });
   
       res.json({ message: 'Note shared successfully' });
     } catch (error) {
-      console.error('Error in share note:', error);
+      console.error('Error in sharenote:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   };
