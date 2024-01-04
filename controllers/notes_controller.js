@@ -174,8 +174,9 @@ module.exports.createnote = async function (req, res) {
       if (!note || !sharedUser) {
         return res.status(404).json({ error: 'Note or user not found' });
       }
-  
-      if (note.nuser._id.toString() !== req.user._id) {
+      console.log(note.nuser._id.toString()) ; 
+      console.log(req.user._id) ;
+      if (note.nuser._id.toString() !== req.user._id.toString()) {
         return res.status(403).json({ error: 'Unauthorized to share this note' });
       }
   
