@@ -83,12 +83,13 @@ passport.checkAuthentication = async (req, res, next) => {
 passport.dontload = async function( req , res , next ){
     try{
         if ( req.isAuthenticated()){
-            return res.redirect('/products') ;
+            res.status(401).json({error : "Already logged in"})
         }
         return next() ;
     }
     catch( err ){
-        console.log( "ERR APPERA") ;
+        console.error('Error in loading middleware ') ;
+        res.status(500).json({error:"Internal server Error"}) ;
     }
 }
 // //chekc if user is signed in

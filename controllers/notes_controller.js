@@ -60,28 +60,30 @@ module.exports.createnote = async function (req, res) {
     try {
       // Authentication check
       if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        return res.status(401).json({ error: 'Unauthorized' }); 
       }
   
-      // Extract note ID from the request parameters
+      // Extract note ID and authenticated user ID
       const noteId = req.params.id;
+      const authenticatedUserId = req.user._id; // Assuming user ID is in req.user
   
       // Retrieve the note
       const note = await Note.findById(noteId)
         .populate('nuser') // Populate user information
         .lean(); // Optimize performance
   
-      // Check if note exists
-      if (!note) {
-        return res.status(404).json({ error: 'Note not found' });
+      // Check if note exists and belongs to the authenticated user
+      if (!note || note.nuser._id.toString() !== authenticatedUserId.toString()) {
+        return res.status(403).json({ error: 'Forbidden' }); // 403 for unauthorized access
       }
-
+  
       res.json(note);
     } catch (error) {
       console.error('Error in onenoteload:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   };
+  
   
   module.exports.updatenote = async function (req, res) {
     try {
@@ -92,13 +94,16 @@ module.exports.createnote = async function (req, res) {
   
       // Extract note ID from request parameters
       const noteId = req.params.id;
-  
+      const authenticatedUserId = req.user._id;
       // Retrieve the note to update
       const note = await Note.findById(noteId);
   
       // Check if note exists
       if (!note) {
         return res.status(404).json({ error: 'Note not found' });
+      }
+      if (note.nuser._id.toString() !== authenticatedUserId.toString()) {
+        return res.status(403).json({ error: 'Forbidden' }); // 403 for unauthorized access
       }
   
       // Authorize access to update the note (optional)
@@ -120,6 +125,32 @@ module.exports.createnote = async function (req, res) {
       res.status(500).json({ error: 'Internal server error' });
     }
   };
+  // module.exports.deletenode = async function (req, res) {
+  //   try {
+  //     // Authentication check
+  //     if (!req.isAuthenticated()) {
+  //       return res.status(401).json({ error: 'Unauthorized' });
+  //     }
+  
+  //     // Extract note ID from request parameters
+  //     const noteId = req.params.id;
+  
+  //     // Retrieve the note to delete
+  //     const note = await Note.findById(noteId);
+  
+  //     // Check if note exists
+  //     if (!note) {
+  //       return res.status(404).json({ error: 'Note not found' });
+  //     }
+  //     // Delete the note
+  //     await note.deleteOne();
+  
+  //     res.json({ message: 'Note deleted successfully' });
+  //   } catch (error) {
+  //     console.error('Error in deletenode:', error);
+  //     res.status(500).json({ error: 'Internal server error' });
+  //   }
+  // };
   module.exports.deletenode = async function (req, res) {
     try {
       // Authentication check
@@ -138,12 +169,9 @@ module.exports.createnote = async function (req, res) {
         return res.status(404).json({ error: 'Note not found' });
       }
   
-      // Authorize access to delete the note (optional)
-      // Replace with your authorization logic
-      // const isAuthorized = await authorizeNoteDeletion(req.user, note);
-      // if (!isAuthorized) {
-      //   return res.status(403).json({ error: 'Forbidden' });
-      // }
+      // Remove note ID from user's notes array
+      const userId = req.user._id; // Assuming user ID is in req.user
+      await User.findByIdAndUpdate(userId, { $pull: { notes: noteId } });
   
       // Delete the note
       await note.deleteOne();
